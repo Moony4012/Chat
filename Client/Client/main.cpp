@@ -60,7 +60,7 @@ int main()
 	sin.sin_family = AF_INET;
 	sin.sin_port = htons(7500);
 
-	result = bind(sock, (SOCKADDR*)&sin, sizeof(sin));
+	//result = bind(sock, (SOCKADDR*)&sin, sizeof(sin));
 	/*
 	if (result != NO_ERROR)
 	{
@@ -74,7 +74,7 @@ int main()
 
 	int connectionResult = connect(sock, (SOCKADDR*)&sin, sizeof(sin));
 
-	send(sock, name.c_str(), name.size() + 1, 0);
+	send(sock, name.c_str(), (int)name.size() + 1, 0);
 	cout << name << ": ";
 
 	int sendIndex = 0;
@@ -82,7 +82,7 @@ int main()
 
 	while (true)
 	{
-		if (_kbhit() == true)
+		if (_kbhit() != 0)
 		{
 			char c = _getch();
 
@@ -103,7 +103,7 @@ int main()
 			if (c == '\r' || c == '\n')
 			{
 				sendBuffer[sendIndex] = '\0';
-				send(sock, sendBuffer, strlen(sendBuffer) + 1, 0);
+				send(sock, sendBuffer, (int)strlen(sendBuffer) + 1, 0);
 				sendIndex = 0;
 
 				putchar('\n');
