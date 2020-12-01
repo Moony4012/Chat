@@ -74,6 +74,8 @@ int main()
 
 	int connectionResult = connect(sock, (SOCKADDR*)&sin, sizeof(sin));
 
+	Sleep(250);
+
 	send(sock, name.c_str(), (int)name.size() + 1, 0);
 	cout << name << ": ";
 
@@ -86,16 +88,18 @@ int main()
 		{
 			char c = _getch();
 
-			putchar(c);
-			if (c == '\b' && sendIndex > 0)
+			if (c == '\b')
 			{
-				putchar(' ');
-				putchar('\b');
-				sendBuffer[sendIndex] = '\0';
-				--sendIndex;
+				if (sendIndex > 0)
+				{
+					std::cout << "\b \b";
+					--sendIndex;
+					sendBuffer[sendIndex] = '\0';
+				}
 			}
 			else
 			{
+				putchar(c);
 				sendBuffer[sendIndex] = c;
 				++sendIndex;
 			}
@@ -131,9 +135,21 @@ int main()
 			int recvLen = recv(sock, buffer, sizeof(buffer), 0);
 			if (recvLen > 0)
 			{
+				for (size_t i = 0; i < sendIndex + name.size() + 2; ++i)
+				{
+					std::cout << "\b \b";
+				}
+
+				if (recvLen > 4096 - 1)
+				{
+					recvLen = 4096 - 1;
+				}
 				buffer[recvLen] = '\0';
 
 				std::cout << buffer << endl;
+
+				sendBuffer[sendIndex] = '\0';
+				std::cout << name << ": " << sendBuffer;
 			}
 		}
 	}

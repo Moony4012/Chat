@@ -10,7 +10,7 @@ using namespace std;
 
 struct Client
 {
-	SOCKET socket;
+	SOCKET socket = INVALID_SOCKET;
 	string name;
 };
 
@@ -84,7 +84,7 @@ int main()
 			std::cout << "Un nouveau client s'est connecte" << endl;
 		}
 
-		for (int i = 0; i < clients.size(); ++i)
+		for (size_t i = 0; i < clients.size(); ++i)
 		{
 			Client& client = clients[i];
 
@@ -108,6 +108,10 @@ int main()
 				int recvLen = recv(client.socket, buffer, sizeof(buffer), 0);
 				if (recvLen > 0)
 				{
+					if (recvLen > 4096 - 1)
+					{
+						recvLen = 4096 - 1;
+					}
 					buffer[recvLen] = '\0';
 
 					string message;
@@ -124,7 +128,7 @@ int main()
 
 					cout << message << endl;
 
-					for (int j = 0; j < clients.size(); ++j)
+					for (size_t j = 0; j < clients.size(); ++j)
 					{
 						if (j != i) // Transmettre le message a tout le monde sauf a l'expediteur
 						{
@@ -140,8 +144,9 @@ int main()
 					}
 
 					string message = client.name + " a quitter le chat";
+					cout << message << endl;
 
-					for (int j = 0; j < clients.size(); ++j)
+					for (size_t j = 0; j < clients.size(); ++j)
 					{
 						if (j != i) // Transmettre le message a tout le monde sauf a l'expediteur
 						{
