@@ -60,18 +60,6 @@ int main()
 	sin.sin_family = AF_INET;
 	sin.sin_port = htons(7500);
 
-	//result = bind(sock, (SOCKADDR*)&sin, sizeof(sin));
-	/*
-	if (result != NO_ERROR)
-	{
-		result = WSAGetLastError();
-
-		closesocket(sock);
-		WSACleanup();
-		return 1;
-	}
-	*/
-
 	int connectionResult = connect(sock, (SOCKADDR*)&sin, sizeof(sin));
 
 	Sleep(250);
