@@ -97,6 +97,46 @@ void AcceptNewClient(SOCKET sock, vector<Client>& clients)
 	}
 }
 
+void ParseType(const char* buffer, int bufferSize, SOCKET sock, Client& client, vector<Client>& clients)
+{
+	unsigned char messageType = buffer[0];
+	++buffer;
+	--bufferSize;
+
+	if (messageType == 0) // SetUsername
+	{
+		string previousName = client.name;
+		client.name.assign(buffer, bufferSize);
+
+		string message;
+		if (previousName.empty() == true)
+		{
+			message = client.name + " join the chat !";
+		}
+		else
+		{
+			message = previousName + " renamed as " + client.name;
+		}
+
+		cout << message << endl;
+		SendToAllClientExceptMe(message, clients, client);
+	}
+	else if (messageType == 1) // Message
+	{
+		string message;
+		message.assign(buffer, bufferSize);
+
+		message.insert(0, client.name + " : ");
+
+		cout << message << endl;
+		SendToAllClientExceptMe(message, clients, client);
+	}
+	else
+	{
+		cerr << "Unknown message type !" << endl;
+	}
+}
+
 bool RecvFromClient(SOCKET sock, Client& client, vector<Client>& clients)
 {
 	char buffer[4096];
@@ -107,23 +147,9 @@ bool RecvFromClient(SOCKET sock, Client& client, vector<Client>& clients)
 		{
 			recvLen = 4096 - 1;
 		}
-		buffer[recvLen] = '\0';
+		//buffer[recvLen] = '\0';
 
-		string message;
-
-		if (client.name == "")
-		{
-			client.name = buffer;
-			message = client.name + " join the chat !";
-		}
-		else
-		{
-			message = client.name + ": " + buffer;
-		}
-
-		cout << message << endl;
-
-		SendToAllClientExceptMe(message, clients, client);
+		ParseType(buffer, recvLen, sock, client, clients);
 	}
 	else if (recvLen == 0 || recvLen == SOCKET_ERROR)
 	{

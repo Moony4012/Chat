@@ -174,6 +174,36 @@ bool TryToConnect(SOCKET sock)
 	// Return connection status
 	return CheckConnection(sock);
 }
+/*
+ManageType()
+{
+
+}
+*/
+
+void Send(SOCKET sock, unsigned char messageType, const void* data, unsigned int size)
+{
+	// Create the buffer to concate MessageType and Data in same buffer
+	int totalBufferSize = 1 + size;
+	unsigned char* buffer = new unsigned char[totalBufferSize];
+	buffer[0] = messageType;
+	memcpy(buffer + 1, data, size);
+
+	send(sock, (char*)buffer, totalBufferSize, 0);
+
+	// release memory
+	delete[] buffer;
+}
+
+void SendUsername(SOCKET sock, const string& username)
+{
+	Send(sock, 0, username.c_str(), username.size());
+}
+
+void SendChatMessage(SOCKET sock, const string& message)
+{
+	Send(sock, 1, message.c_str(), message.size());
+}
 
 int main()
 {
@@ -191,7 +221,7 @@ int main()
 	cin >> name;
 
 	// Send Username to server to initialize client on server side
-	send(sock, name.c_str(), (int)name.size() + 1, 0);
+	SendUsername(sock, name);
 	cout << name << ": ";
 
 	int inputIndex = 0;
@@ -203,7 +233,7 @@ int main()
 		{
 			// Send message to server
 			inputBuffer[inputIndex] = '\0';
-			send(sock, inputBuffer, (int)strlen(inputBuffer) + 1, 0);
+			SendChatMessage(sock, inputBuffer);
 			inputIndex = 0;
 
 			putchar('\n');
