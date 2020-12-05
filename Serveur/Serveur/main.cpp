@@ -3,10 +3,9 @@
 #include <vector>
 
 #include <winsock2.h>
+#pragma comment(lib,"Ws2_32.lib")
 
 using namespace std;
-
-#pragma comment(lib,"Ws2_32.lib")
 
 struct Client
 {
@@ -67,8 +66,19 @@ SOCKET Initialize(int portNumber)
 		return INVALID_SOCKET;
 	}
 
-	std::cout << "Le serveur a fini de demarer" << endl;
+	cout << "Server is setup." << endl;
 	return sock;
+}
+
+void SendToAllClientExceptMe(const string& message, vector<Client>& clients, const Client& me)
+{
+	for (size_t j = 0; j < clients.size(); ++j)
+	{
+		if (clients[j].socket != me.socket) // Transmettre le message a tout le monde sauf a l'expediteur
+		{
+			send(clients[j].socket, message.c_str(), message.size(), 0);
+		}
+	}
 }
 
 void AcceptNewClient(SOCKET sock, vector<Client>& clients)
@@ -83,7 +93,7 @@ void AcceptNewClient(SOCKET sock, vector<Client>& clients)
 		client.socket = sockClient;
 
 		clients.push_back(client);
-		std::cout << "Un nouveau client s'est connecte" << endl;
+		cout << "New client connection... waiting his name..." << endl;
 	}
 }
 
@@ -104,7 +114,7 @@ bool RecvFromClient(SOCKET sock, Client& client, vector<Client>& clients)
 		if (client.name == "")
 		{
 			client.name = buffer;
-			message = client.name + " a rejoin le chat !";
+			message = client.name + " join the chat !";
 		}
 		else
 		{
@@ -113,31 +123,14 @@ bool RecvFromClient(SOCKET sock, Client& client, vector<Client>& clients)
 
 		cout << message << endl;
 
-		for (size_t j = 0; j < clients.size(); ++j)
-		{
-			if (clients[j].socket != client.socket) // Transmettre le message a tout le monde sauf a l'expediteur
-			{
-				send(clients[j].socket, message.c_str(), message.size(), 0);
-			}
-		}
+		SendToAllClientExceptMe(message, clients, client);
 	}
 	else if (recvLen == 0 || recvLen == SOCKET_ERROR)
 	{
-		if (recvLen == SOCKET_ERROR)
-		{
-			//std::cout << "Error code : " << WSAGetLastError() << endl;
-		}
-
-		string message = client.name + " a quitter le chat";
+		string message = client.name + " left.";
 		cout << message << endl;
 
-		for (size_t j = 0; j < clients.size(); ++j)
-		{
-			if (clients[j].socket != client.socket) // Transmettre le message a tout le monde sauf a l'expediteur
-			{
-				send(clients[j].socket, message.c_str(), message.size(), 0);
-			}
-		}
+		SendToAllClientExceptMe(message, clients, client);
 		return true;
 	}
 
@@ -146,6 +139,7 @@ bool RecvFromClient(SOCKET sock, Client& client, vector<Client>& clients)
 
 void RecvClients(SOCKET sock, vector<Client>& clients)
 {
+	// For each client check his FileDescriptor
 	for (size_t i = 0; i < clients.size(); ++i)
 	{
 		Client& client = clients[i];
@@ -163,6 +157,7 @@ void RecvClients(SOCKET sock, vector<Client>& clients)
 			return;
 		}
 
+		// Check if client has sent a message
 		if (FD_ISSET(client.socket, &readSet))
 		{
 			if (RecvFromClient(sock, client, clients) == true)
@@ -178,7 +173,9 @@ int main()
 {
 	SOCKET sock = Initialize(7500); //port
 	if (sock == INVALID_SOCKET)
+	{
 		return 1;
+	}
 
 	vector<Client> clients;
 
