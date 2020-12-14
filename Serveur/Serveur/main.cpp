@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 
+#include <WS2tcpip.h>
 #include <winsock2.h>
 #pragma comment(lib,"Ws2_32.lib")
 
@@ -76,7 +77,7 @@ void SendToAllClientExceptMe(const string& message, vector<Client>& clients, con
 	{
 		if (clients[j].socket != me.socket) // Transmettre le message a tout le monde sauf a l'expediteur
 		{
-			send(clients[j].socket, message.c_str(), message.size(), 0);
+			send(clients[j].socket, message.c_str(), (int)message.size(), 0);
 		}
 	}
 }
@@ -195,6 +196,65 @@ void RecvClients(SOCKET sock, vector<Client>& clients)
 	}
 }
 
+void PrintExternIpAdress()
+{
+	// Create server Socket
+	SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (sock == INVALID_SOCKET)
+	{
+		return;
+	}
+
+	// Try to connect
+	SOCKADDR_IN sin;
+	sin.sin_addr.s_addr = inet_addr("108.171.202.203");
+	sin.sin_family = AF_INET;
+	sin.sin_port = htons(80);
+
+	int connectionResult = connect(sock, (SOCKADDR*)&sin, sizeof(sin));
+	if (connectionResult == SOCKET_ERROR && WSAGetLastError() != WSAEWOULDBLOCK)
+	{
+		closesocket(sock);
+		return;
+	}
+
+	const char* httpRequest = "GET / HTTP/1.0\r\nHost: api.ipify.org\r\nUser-Agent: MonSuperServeurDeLaMortQuiTueDeOuf\r\n\r\n";
+
+	if (send(sock, httpRequest, strlen(httpRequest), 0) <= 0)
+	{
+		closesocket(sock);
+		return;
+	}
+
+	char buffer[256] = { '\0' };
+	int recvLen = recv(sock, buffer, sizeof(buffer), 0);
+	if (recvLen > 0)
+	{
+		buffer[recvLen] = '\0';
+
+		char* bufferOffset = buffer;
+
+		while (bufferOffset[0] != '\r' || bufferOffset[1] != '\n' || bufferOffset[2] != '\r' || bufferOffset[3] != '\n')
+			++bufferOffset;
+
+		bufferOffset += 4;
+
+		cout << "External Client connection Ip : " << bufferOffset << endl;
+	}
+
+	closesocket(sock);
+}
+
+void PrintLocalIpAdress()
+{
+	char hostname[255];
+	gethostname(hostname, 255);
+
+	hostent* host = gethostbyname(hostname);
+	char* localIp = inet_ntoa(*(in_addr*)*host->h_addr_list);
+	cout << "Local Client connection Ip : " << localIp << endl;
+}
+
 int main()
 {
 	SOCKET sock = Initialize(7500); //port
@@ -202,6 +262,9 @@ int main()
 	{
 		return 1;
 	}
+
+	PrintExternIpAdress();
+	PrintLocalIpAdress();
 
 	vector<Client> clients;
 
